@@ -2,14 +2,16 @@
 
 Simple Bandcamp collection syncronization & downloader utility.
 
-### Installation
+## Installation
 ```sh
 go install github.com/apprehensions/hazelnut@latest
 ```
 
-### Usage
+## Usage
 `hazelnut` requires the `Cookie` header made on bandcamp web requests.
-To retrieve your full cookie string, you need to copy it from a [bandcamp.com](https://bandcamp.com/) network request, which can be found in a network request in the 'Request Headers' section under the network requests tab in your browser.
+
+To retrieve your `Cookie` header, you need to copy it from a [bandcamp.com](https://bandcamp.com/) network request, which can be found in a network request in the 'Request Headers' section under the network requests tab in your browser.
+
 Afterwards, you can copy the copied `Cookie` value to a file named `hazelnut-cookies.txt`, which `hazelnut` uses as the default cookies path (you may choose to change it with the `-cookies` flag).
 
 Example usage:
@@ -17,7 +19,7 @@ Example usage:
 hazelnut -format flac -o Music
 ```
 
-### Behavior
+## Behavior
 Music is downloaded to the given output directory (`-o`, default `.`) with this structure:
 ```
 Music
