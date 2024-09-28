@@ -13,7 +13,7 @@ import (
 )
 
 // life - demo two - 05 twelve travel.flac -> 05 twelve travel.flac
-var TrackPattern = regexp.MustCompile(`^[^-]* - [^-]* - (\d+.*\.\w+)$`)
+var TrackPattern = regexp.MustCompile(`.* - (\d+.*\.\w+)$`)
 
 func (cd *CollectionDownloader) Extract(i *bc.Item, src *os.File, dir string) error {
 	if _, err := src.Seek(0, io.SeekStart); err != nil {
