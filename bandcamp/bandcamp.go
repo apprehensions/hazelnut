@@ -47,3 +47,14 @@ func (it ItemType) String() string {
 		return string(it)
 	}
 }
+
+func (it ItemType) Short() string {
+	switch it {
+	case AlbumShort, AlbumLong:
+		return string(AlbumShort)
+	case TrackShort, TrackLong:
+		return string(TrackShort)
+	default:
+		return string(it)
+	}
+}

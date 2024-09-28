@@ -1,71 +1,48 @@
 package main
 
 import (
+	"context"
 	"flag"
-	"log"
-	"log/slog"
+	"fmt"
 	"os"
+	"os/signal"
 
 	bc "github.com/apprehensions/hazelnut/bandcamp"
-	"github.com/lmittmann/tint"
 )
-
-var (
-	outputDir string
-	format    string
-	cookies   string
-	fileExt   string
-)
-
-var formatExtension = map[string]string{
-	"mp3-v0":        ".mp3",
-	"mp3-320":       ".mp3",
-	"flac":          ".flac",
-	"aac-hi":        ".m4a",
-	"vorbis":        ".ogg",
-	"alac":          ".m4a",
-	"wav":           ".wav",
-	"aiff-lossless": ".aiff",
-}
-
-func init() {
-	flag.StringVar(&format, "format", "flac", "audio format to use")
-	flag.StringVar(&outputDir, "o", ".", "directory to download albums to")
-	flag.StringVar(&cookies, "cookies", "hazelnut-cookies.txt", "bandcamp user cookies file path")
-}
 
 func main() {
+	aff := flag.String("format", "flac", "audio format to use")
+	dir := flag.String("o", ".", "directory to download albums to")
+	ckf := flag.String("cookies", "hazelnut-cookies.txt", "bandcamp user cookies file path")
 	flag.Parse()
 
-	slog.SetDefault(slog.New(
-		tint.NewHandler(os.Stderr, &tint.Options{
-			Level: slog.LevelDebug,
-		}),
-	))
-
-	ext, ok := formatExtension[format]
-	if !ok {
-		log.Fatalf("unhandled audio format extension delegation: %s", format)
-	}
-	fileExt = ext
-
-	c, err := os.ReadFile(cookies)
+	c := client(*ckf)
+	cd, err := New(*dir, *aff, c)
 	if err != nil {
-		log.Fatal(err)
+		fmt.Println(err)
+		os.Exit(1)
 	}
 
-	if c[len(c)-1] == '\n' {
-		c = c[:len(c)-1]
-	}
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
+	defer stop()
 
-	d := &downloader{c: bc.New(string(c))}
-
-	if err := os.MkdirAll(outputDir, 0o755); err != nil {
-		log.Fatal(err)
-	}
-
-	err = d.DownloadAll()
+	err = cd.Start(ctx)
 	if err != nil {
-		log.Fatal(err)
+		fmt.Println("error:", err)
+		os.Exit(1)
 	}
+}
+
+func client(name string) *bc.Client {
+	ck, err := os.ReadFile(name)
+	if err != nil {
+		fmt.Println("cookies:", err)
+		os.Exit(1)
+	}
+
+	if ck[len(ck)-1] == '\n' {
+		ck = ck[:len(ck)-1]
+	}
+
+	return bc.New(string(ck))
 }

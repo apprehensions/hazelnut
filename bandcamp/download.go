@@ -3,6 +3,7 @@ package bandcamp
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
 
@@ -11,7 +12,10 @@ import (
 
 var userAgent = "Mozilla/5.0 (X11; Linux x86_64; rv:125.0) Gecko/20100101 Firefox/125.0"
 
-var ErrNoData = errors.New("no download data found")
+var (
+	ErrNoData   = errors.New("no download data found")
+	ErrNoFormat = errors.New("format not found for downloadable")
+)
 
 type DigitalItemDownload struct {
 	Size        string `json:"size_mb"`
@@ -51,14 +55,14 @@ func (c *Client) Download(d *DigitalItemDownload) (*http.Response, error) {
 	return resp, nil
 }
 
-func (c *Client) GetDigitalItem(downloadURL string) (*DigitalItem, error) {
+func (c *Client) GetDigitalItem(item *Item) (*DigitalItem, error) {
 	var blob string
 	dd := struct {
 		// there is so much garbage here it's insane
 		Items []DigitalItem `json:"digital_items"`
 	}{}
 
-	req, err := http.NewRequest("GET", downloadURL, nil)
+	req, err := http.NewRequest("GET", item.DownloadURL, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -108,4 +112,19 @@ func (c *Client) GetDigitalItem(downloadURL string) (*DigitalItem, error) {
 	}
 
 	return &dd.Items[0], nil
+}
+
+func (c *Client) GetDigitalItemDownload(item *Item, format string) (*DigitalItemDownload, error) {
+	di, err := c.GetDigitalItem(item)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, fdl := range di.Downloads {
+		if fdl.Encoding == format {
+			return &fdl, nil
+		}
+	}
+
+	return nil, fmt.Errorf("%w: %s", ErrNoFormat, format)
 }

@@ -2,7 +2,7 @@ package bandcamp
 
 import (
 	"fmt"
-	"strconv"
+	"math"
 	"time"
 )
 
@@ -40,13 +40,6 @@ type ItemArt struct {
 
 type SaleItemType string
 
-const (
-	// Unknown
-	C SaleItemType = "c"
-	P SaleItemType = "p"
-	R SaleItemType = "r"
-)
-
 type URLHints struct {
 	// Unknown fields ommitted
 	ItemType  ItemType `json:"item_type"`
@@ -73,9 +66,9 @@ type CollectionItem struct {
 	Token              string       `json:"token"`
 }
 
-func (ci CollectionItem) String() string {
-	return ci.BandName + " - " + ci.Title +
-		" (" + ci.Type.String() + " " + strconv.FormatInt(int64(ci.ID), 10) + ")"
+type Item struct {
+	DownloadURL string
+	CollectionItem
 }
 
 type CollectionItems struct {
@@ -83,6 +76,10 @@ type CollectionItems struct {
 	Items          []CollectionItem `json:"items"`
 	MoreAvailable  bool             `json:"more_available"`
 	RedownloadURLs DownloadURLs     `json:"redownload_urls"`
+}
+
+func (ci CollectionItem) String() string {
+	return fmt.Sprintf("%s %s%d", ci.BandName, ci.Type.Short(), ci.ID)
 }
 
 func (c *Client) GetCollectionSummary() (*FanSummary, error) {
@@ -96,20 +93,43 @@ func (c *Client) GetCollectionSummary() (*FanSummary, error) {
 	return &fs, nil
 }
 
-func (c *Client) GetCollectionItems(id FanID, count int) (*CollectionItems, error) {
+func (c *Client) GetCollectionItems(id FanID) (*CollectionItems, error) {
 	var ci CollectionItems
 
-	// https://github.com/FalseVictories/Ohia/blob/main/BCKit/Sources/BCKit/Services/DownloadService/LiveDownloadService.swift#L33
-	r := map[string]interface{}{
+	req := map[string]interface{}{
 		"fan_id":           id,
 		"older_than_token": fmt.Sprintf("%d::a::", time.Now().Unix()),
-		"count":            count,
+		"count":            math.MaxInt32,
 	}
 
-	err := c.Request("POST", "fancollection/1/collection_items", r, &ci)
+	err := c.Request("POST", "fancollection/1/collection_items", req, &ci)
 	if err != nil {
 		return nil, err
 	}
 
 	return &ci, nil
+}
+
+func (c *Client) GetItems(id FanID) ([]Item, error) {
+	ci, err := c.GetCollectionItems(id)
+	if err != nil {
+		return nil, err
+	}
+
+	var items []Item
+
+	for si, u := range ci.RedownloadURLs {
+		for _, i := range ci.Items {
+			if si != fmt.Sprint(i.SaleItemType, i.SaleItemID) {
+				continue
+			}
+
+			items = append(items, Item{
+				CollectionItem: i,
+				DownloadURL:    u,
+			})
+		}
+	}
+
+	return items, nil
 }

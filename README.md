@@ -35,3 +35,7 @@ Music
 Music belonging to albums or tracks are saved without the artist and album in the filename, since said metadata is already represented in the directory structure.
 
 If the track's file or album's directory already exists, it is skipped.
+
+### Credits
+
+* [Ohia](https://github.com/FalseVictories/Ohia)
