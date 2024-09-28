@@ -15,16 +15,7 @@ import (
 	"golang.org/x/sync/semaphore"
 )
 
-var filenameSanitizer = strings.NewReplacer(
-	"/", "_",
-	"?", "_",
-	"<", "_",
-	">", "_",
-	":", "_",
-	"|", "_",
-	"\"", "_",
-	"*", "_",
-)
+var filenameSanitizer = strings.NewReplacer("/", "_")
 
 var formatExtension = map[string]string{
 	"mp3-v0":        ".mp3",
@@ -85,7 +76,6 @@ func (cd *CollectionDownloader) Start(ctx context.Context) error {
 	_ = cancel
 
 	for _, item := range items {
-		_ = item
 		if err := sem.Acquire(ctx, 1); err != nil {
 			break
 		}
@@ -94,6 +84,7 @@ func (cd *CollectionDownloader) Start(ctx context.Context) error {
 				sem.Release(1)
 				cd.root.Increment()
 			}()
+
 			if err := cd.Download(&item); err != nil {
 				cancel(err)
 			}

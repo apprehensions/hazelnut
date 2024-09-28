@@ -7,9 +7,13 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"regexp"
 
 	bc "github.com/apprehensions/hazelnut/bandcamp"
 )
+
+// life - demo two - 05 twelve travel.flac -> 05 twelve travel.flac
+var TrackPattern = regexp.MustCompile(`^[^-]* - [^-]* - (\d+.*\.\w+)$`)
 
 func (cd *CollectionDownloader) Extract(i *bc.Item, src *os.File, dir string) error {
 	if _, err := src.Seek(0, io.SeekStart); err != nil {
@@ -26,9 +30,6 @@ func (cd *CollectionDownloader) Extract(i *bc.Item, src *os.File, dir string) er
 		return fmt.Errorf("zip reader: %w", err)
 	}
 
-	// life - demo two - 05 twelve travel.flac -> 05 twelve travel.flac
-	cut := len(fmt.Sprintf("%s - %s - ", i.BandName, i.Title))
-
 	for _, f := range r.File {
 		if f.FileInfo().IsDir() {
 			return errors.New("unexpected directory")
@@ -36,7 +37,11 @@ func (cd *CollectionDownloader) Extract(i *bc.Item, src *os.File, dir string) er
 
 		name := f.Name
 		if filepath.Ext(name) == cd.ext {
-			name = name[cut:]
+			match := TrackPattern.FindStringSubmatch(name)
+			if len(match) != 2 {
+				return fmt.Errorf("unexpected track filename format: %s", name)
+			}
+			name = match[1]
 		}
 		name = filepath.Join(dir, name)
 
