@@ -3,6 +3,7 @@ package bandcamp
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 )
@@ -31,16 +32,33 @@ func (e APIError) Error() string {
 }
 
 func New(bandcampCookie string) *Client {
-	c := &http.Client{
+	return &Client{c: &http.Client{
 		Transport: &userTransport{cookie: bandcampCookie, base: http.DefaultTransport},
-	}
+	}}
+}
 
-	return &Client{
-		c: c,
-	}
+func (c *Client) Do(req *http.Request) (*http.Response, error) {
+	return c.c.Do(req)
 }
 
 func (c *Client) Request(method, endpoint string, body, data interface{}) error {
+	for {
+		err := c.request(method, endpoint, body, data)
+
+		switch err {
+		// case http.StatusOK:
+		// 	body = b
+		// 	data = d
+		// 	return nil
+		// case http.StatusTooManyRequests:
+		// 	continue
+		default:
+			return err
+		}
+	}
+}
+
+func (c *Client) request(method, endpoint string, body, data interface{}) error {
 	buf := new(bytes.Buffer)
 	if body != nil {
 		if err := json.NewEncoder(buf).Encode(body); err != nil {
@@ -61,6 +79,10 @@ func (c *Client) Request(method, endpoint string, body, data interface{}) error 
 		return err
 	}
 	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("bad status: %s", resp.Status)
+	}
 
 	b, err := io.ReadAll(resp.Body)
 	if err != nil {

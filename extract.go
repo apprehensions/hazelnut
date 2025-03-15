@@ -10,12 +10,12 @@ import (
 )
 
 func ExtractAlbum(src *os.File, dir string) error {
-	srci, err := src.Stat()
+	s, err := src.Stat()
 	if err != nil {
 		return err
 	}
 
-	r, err := zip.NewReader(src, srci.Size())
+	r, err := zip.NewReader(src, s.Size())
 	if err != nil {
 		return err
 	}

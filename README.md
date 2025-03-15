@@ -21,6 +21,7 @@ hazelnut -format flac -o Music
 
 ## Behavior
 Music is downloaded to the given output directory (`-o`, default `.`) with this structure:
+
 ```
 Music
 ├── Sadness
@@ -29,9 +30,15 @@ Music
 │       ├── 02 how bright you shine.m4a
 │       ├── 03 hope you never forget.m4a
 │       └── cover.jpg
-└── ghostslug
-    └── Jikininki.flac
+└── home is in your arms
+    ├── _ (1433347432).mp3
+    └── _ (1987275855)
+        ├── 01 _.mp3
+        ├── 02 _.mp3
+        └── cover.jpg
 ```
 Music belonging to albums or tracks are saved without the artist and album in the filename, since said metadata is already represented in the directory structure.
 
-If the track's file or album's directory already exists, it is skipped.
+Albums and tracks with the same name will have their tralbum ID appended to the name.
+
+If the track or album already exists, it is skipped.

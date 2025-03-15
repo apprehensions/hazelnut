@@ -3,66 +3,101 @@ package bandcamp
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
 
 	"golang.org/x/net/html"
 )
 
-var userAgent = "Mozilla/5.0 (X11; Linux x86_64; rv:125.0) Gecko/20100101 Firefox/125.0"
+var Extensions = map[string]string{
+	"mp3-v0":        ".mp3",
+	"mp3-320":       ".mp3",
+	"flac":          ".flac",
+	"aac-hi":        ".m4a",
+	"vorbis":        ".ogg",
+	"alac":          ".m4a",
+	"wav":           ".wav",
+	"aiff-lossless": ".aiff",
+}
 
-var ErrNoData = errors.New("no download data found")
+type RedownloadItem struct {
+	Item
+	URL string
+}
 
-type DigitalItemDownload struct {
-	Size        string `json:"size_mb"`
-	Description string `json:"description"`
-	Encoding    string `json:"encoding_name"`
-	URL         string `json:"url"`
+type DownloadItem struct {
+	Item
+	Release ItemRelease
+	Download
+}
+
+type Download struct {
+	Size     string `json:"size_mb"`
+	Encoding string `json:"encoding_name"`
+	URL      string `json:"url"`
 }
 
 type DigitalItem struct {
-	// Many fields omitted - out of scope
-	Type            ItemType                       `json:"type"`
-	Title           string                         `json:"title"`
-	Artist          string                         `json:"artist"`
-	ArtID           ArtID                          `json:"art_id"`
-	ID              ItemID                         `json:"item_id"`
-	ItemType        ItemType                       `json:"item_type"`
-	Downloads       map[string]DigitalItemDownload `json:"downloads"`
-	DownloadTypeStr ItemType                       `json:"download_type_str"`
+	Downloads ItemRedownloads `json:"downloads"`
+	Release   ItemRelease     `json:"release_date"`
 }
 
-func (c *Client) Download(d *DigitalItemDownload) (*http.Response, error) {
-	req, err := http.NewRequest("GET", d.URL, nil)
+// map[Extensions.key]Download
+type ItemRedownloads map[string]Download
+
+func (c *Client) GetRedownloadItems(id FanID) ([]RedownloadItem, error) {
+	var items []RedownloadItem
+
+	ci, err := c.GetCollectionItems(id)
 	if err != nil {
 		return nil, err
 	}
-	req.Header.Set("User-Agent", userAgent)
 
-	resp, err := c.c.Do(req)
-	if err != nil {
-		return resp, err
+	for _, item := range ci.Items {
+		name := fmt.Sprint(item.SaleItemType, item.SaleItemID)
+		url, ok := ci.RedownloadURLs[name]
+		if !ok {
+			return nil, fmt.Errorf("missing download for %s", name)
+		}
+
+		items = append(items, RedownloadItem{
+			Item: item, URL: url,
+		})
 	}
 
-	if resp.ContentLength == 0 {
-		return resp, errors.New("expected file")
-	}
-
-	return resp, nil
+	return items, nil
 }
 
-func (c *Client) GetDigitalItem(downloadURL string) (*DigitalItem, error) {
+func (c *Client) GetDownloadItem(item *RedownloadItem, format string) (*DownloadItem, error) {
+	digital, err := c.GetItemRedownloads(item)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, d := range digital.Downloads {
+		if d.Encoding == format {
+			return &DownloadItem{
+				Item:     item.Item,
+				Download: d,
+				Release:  digital.Release,
+			}, nil
+		}
+	}
+
+	return nil, fmt.Errorf("format %s unavailable", format)
+}
+
+func (c *Client) GetItemRedownloads(item *RedownloadItem) (*DigitalItem, error) {
 	var blob string
 	dd := struct {
-		// there is so much garbage here it's insane
-		Items []DigitalItem `json:"digital_items"`
+		Items []DigitalItem `json:"download_items"`
 	}{}
 
-	req, err := http.NewRequest("GET", downloadURL, nil)
+	req, err := http.NewRequest("GET", item.URL, nil)
 	if err != nil {
 		return nil, err
 	}
-	req.Header.Set("User-Agent", userAgent)
 
 	resp, err := c.c.Do(req)
 	if err != nil {
@@ -99,7 +134,7 @@ func (c *Client) GetDigitalItem(downloadURL string) (*DigitalItem, error) {
 	}
 
 	if blob == "" {
-		return nil, ErrNoData
+		return nil, errors.New("no download data found")
 	}
 
 	err = json.Unmarshal([]byte(blob), &dd)
