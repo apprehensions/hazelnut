@@ -1,6 +1,6 @@
 # hazelnut
 
-Simple Bandcamp collection syncronization & downloader utility.
+Simple CLI [bandcamp](https://bandcamp.com) collection synchronizer.
 
 ```
 $ ./hazelnut -o ~/music  
