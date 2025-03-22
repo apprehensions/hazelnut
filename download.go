@@ -70,10 +70,6 @@ func (d *downloader) request(i *bc.DownloadItem) (*http.Response, error) {
 }
 
 func (d *downloader) downloadItem(redownload *bc.RedownloadItem, addID bool) error {
-	if redownload.BandName != "home is in your arms" {
-		return nil
-	}
-
 	name := path(redownload, addID)
 
 	download, err := d.c.GetDownloadItem(redownload, format)

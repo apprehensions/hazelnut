@@ -74,10 +74,10 @@ func (d *downloader) downloadCollection() error {
 
 	sem := semaphore.NewWeighted(jobs)
 
-	bar := d.b.New(int64(len(redownloads)), barStyle(),
+	bar := d.b.New(int64(len(redownloads)), mpb.SpinnerStyle(),
 		mpb.PrependDecorators(
-			decor.Name(d.s.Collection.Username, decor.WCSyncSpaceR),
-			decor.CountersNoUnit("%d / %d", decor.WCSyncSpaceR),
+			decor.Name(d.s.Collection.Username),
+			decor.CountersNoUnit("%d / %d", decor.WC{C: decor.DextraSpace}),
 		),
 		mpb.BarRemoveOnComplete(),
 	)
@@ -110,10 +110,7 @@ func (d *downloader) downloadCollection() error {
 		}()
 	}
 
-	defer func() {
-		d.b.Wait()
-		fmt.Println("Bruh")
-	}()
+	defer d.b.Wait()
 
 	if err := sem.Acquire(d.ctx, jobs); err != nil {
 		return fmt.Errorf("wait: %w", err)
