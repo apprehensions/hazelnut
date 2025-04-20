@@ -1,4 +1,4 @@
-module github.com/apprehensions/hazelnut
+module github.com/apprehensions/otoko
 
 go 1.23.0
 

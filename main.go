@@ -19,7 +19,7 @@ func init() {
 	flag.StringVar(&format, "format", "flac", "audio format to use")
 	flag.Int64Var(&jobs, "jobs", 6, "amount of parallel jobs to use to download")
 	flag.StringVar(&dir, "o", "collection", "directory to download albums to")
-	flag.StringVar(&cookies, "cookies", "hazelnut-cookies.txt", "bandcamp user cookies file path")
+	flag.StringVar(&cookies, "cookies", "otoko-cookies.txt", "bandcamp user cookies file path")
 }
 
 func main() {

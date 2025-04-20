@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"os"
 
-	bc "github.com/apprehensions/hazelnut/bandcamp"
+	bc "github.com/apprehensions/otoko/bandcamp"
 	"github.com/vbauerster/mpb/v8"
 	"github.com/vbauerster/mpb/v8/decor"
 	"golang.org/x/sync/semaphore"
